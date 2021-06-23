@@ -13,6 +13,7 @@ import type {
   UpdateDNSDataParams,
   UpdateDNSResourceParams,
   UpdateParams,
+  UpdateRecordParams,
 } from "./types";
 
 import {
@@ -304,9 +305,17 @@ const domainSlice = createSlice({
       state.errors = action.payload;
     },
     updateDNSResourceSuccess: (state: DomainState) => {
-      state.saving = false;
-      state.saved = true;
       state.errors = null;
+    },
+    updateRecord: {
+      prepare: (params: UpdateRecordParams) => ({
+        payload: {
+          params,
+        },
+      }),
+      reducer: () => {
+        // No state changes need to be handled for this action.
+      },
     },
   },
 });

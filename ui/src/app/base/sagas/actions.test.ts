@@ -1,11 +1,12 @@
 import { expectSaga } from "redux-saga-test-plan";
 import * as matchers from "redux-saga-test-plan/matchers";
 
-import { actions as resourcePoolActions } from "app/store/resourcepool";
 import {
   createPoolWithMachines,
   generateMachinePoolActionCreators,
 } from "./actions";
+
+import { actions as resourcePoolActions } from "app/store/resourcepool";
 
 jest.mock("../../../websocket-client");
 
