@@ -17,8 +17,10 @@ import Section from "app/base/components/Section";
 import TableConfirm from "app/base/components/TableConfirm";
 import { useCycled, useWindowTitle } from "app/base/hooks";
 import dashboardURLs from "app/dashboard/urls";
+import introURLs from "app/intro/urls";
 import machineURLs from "app/machines/urls";
 import authSelectors from "app/store/auth/selectors";
+import configSelectors from "app/store/config/selectors";
 import { actions as sshkeyActions } from "app/store/sshkey";
 import sshkeySelectors from "app/store/sshkey/selectors";
 import { actions as userActions } from "app/store/user";
@@ -30,11 +32,14 @@ const UserIntro = (): JSX.Element => {
   const [showSkip, setShowSkip] = useState(false);
   const authLoading = useSelector(authSelectors.loading);
   const authUser = useSelector(authSelectors.get);
+  const completedIntro = useSelector(configSelectors.completedIntro);
+  const configLoading = useSelector(configSelectors.loading);
   const sshkeys = useSelector(sshkeySelectors.all);
   const sshkeyLoading = useSelector(sshkeySelectors.loading);
   const markingIntroComplete = useSelector(userSelectors.markingIntroComplete);
   const [markedIntroComplete] = useCycled(!markingIntroComplete);
   const errors = useSelector(userSelectors.markingIntroCompleteErrors);
+  const loading = authLoading || configLoading || sshkeyLoading;
   const hasSSHKeys = sshkeys.length > 0;
   const errorMessage = formatErrors(errors);
 
@@ -44,8 +49,12 @@ const UserIntro = (): JSX.Element => {
     dispatch(sshkeyActions.fetch());
   }, [dispatch]);
 
-  if (authLoading || sshkeyLoading) {
+  if (loading) {
     return <Spinner />;
+  }
+
+  if (!completedIntro) {
+    return <Redirect to={introURLs.index} />;
   }
 
   if (authUser?.completed_intro || markedIntroComplete) {

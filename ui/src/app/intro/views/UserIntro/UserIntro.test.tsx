@@ -7,11 +7,14 @@ import UserIntro from "./UserIntro";
 
 import * as baseHooks from "app/base/hooks";
 import dashboardURLs from "app/dashboard/urls";
+import introURLs from "app/intro/urls";
 import machineURLs from "app/machines/urls";
 import type { RootState } from "app/store/root/types";
 import { actions as userActions } from "app/store/user";
 import {
   authState as authStateFactory,
+  config as configFactory,
+  configState as configStateFactory,
   sshKey as sshKeyFactory,
   sshKeyState as sshKeyStateFactory,
   rootState as rootStateFactory,
@@ -38,6 +41,9 @@ describe("UserIntro", () => {
       .spyOn(baseHooks, "useCycled")
       .mockImplementation(() => [false, () => null]);
     state = rootStateFactory({
+      config: configStateFactory({
+        items: [configFactory({ name: "completed_intro", value: true })],
+      }),
       sshkey: sshKeyStateFactory({
         items: [sshKeyFactory()],
       }),
@@ -281,5 +287,23 @@ describe("UserIntro", () => {
       .getActions()
       .find((action) => action.type === expectedAction.type);
     expect(actualAction).toStrictEqual(expectedAction);
+  });
+
+  it("redirects to the MAAS intro if not yet completed", () => {
+    state.config.items = [
+      configFactory({ name: "completed_intro", value: false }),
+    ];
+    const store = mockStore(state);
+    const wrapper = mount(
+      <Provider store={store}>
+        <MemoryRouter
+          initialEntries={[{ pathname: "/intro/user", key: "testKey" }]}
+        >
+          <UserIntro />
+        </MemoryRouter>
+      </Provider>
+    );
+    expect(wrapper.find("Redirect").exists()).toBe(true);
+    expect(wrapper.find("Redirect").prop("to")).toBe(introURLs.index);
   });
 });

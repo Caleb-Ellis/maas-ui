@@ -5,6 +5,9 @@ import configureStore from "redux-mock-store";
 
 import MaasIntro from "./MaasIntro";
 
+import dashboardURLs from "app/dashboard/urls";
+import introURLs from "app/intro/urls";
+import machineURLs from "app/machines/urls";
 import { actions as configActions } from "app/store/config";
 import { actions as repoActions } from "app/store/packagerepository";
 import type { RootState } from "app/store/root/types";
@@ -157,5 +160,62 @@ describe("MaasIntro", () => {
       .find((action) => action.type === expectedAction.type);
 
     expect(actualAction).toStrictEqual(expectedAction);
+  });
+
+  it("redirects to the user intro if MAAS intro completed but not user intro", () => {
+    state.config.items = [
+      configFactory({ name: "completed_intro", value: true }),
+    ];
+    state.user.auth = authStateFactory({
+      user: userFactory({ completed_intro: false }),
+    });
+    const store = mockStore(state);
+    const wrapper = mount(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={[{ pathname: "/intro", key: "testKey" }]}>
+          <MaasIntro />
+        </MemoryRouter>
+      </Provider>
+    );
+    expect(wrapper.find("Redirect").exists()).toBe(true);
+    expect(wrapper.find("Redirect").prop("to")).toBe(introURLs.user);
+  });
+
+  it("redirects to the machine list if non-admin and MAAS and user intro completed", () => {
+    state.config.items = [
+      configFactory({ name: "completed_intro", value: true }),
+    ];
+    state.user.auth = authStateFactory({
+      user: userFactory({ completed_intro: true, is_superuser: false }),
+    });
+    const store = mockStore(state);
+    const wrapper = mount(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={[{ pathname: "/intro", key: "testKey" }]}>
+          <MaasIntro />
+        </MemoryRouter>
+      </Provider>
+    );
+    expect(wrapper.find("Redirect").exists()).toBe(true);
+    expect(wrapper.find("Redirect").prop("to")).toBe(machineURLs.machines.index);
+  });
+
+  it("redirects to the dashboard if admin and MAAS and user intro completed", () => {
+    state.config.items = [
+      configFactory({ name: "completed_intro", value: true }),
+    ];
+    state.user.auth = authStateFactory({
+      user: userFactory({ completed_intro: true, is_superuser: true }),
+    });
+    const store = mockStore(state);
+    const wrapper = mount(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={[{ pathname: "/intro", key: "testKey" }]}>
+          <MaasIntro />
+        </MemoryRouter>
+      </Provider>
+    );
+    expect(wrapper.find("Redirect").exists()).toBe(true);
+    expect(wrapper.find("Redirect").prop("to")).toBe(dashboardURLs.index);
   });
 });

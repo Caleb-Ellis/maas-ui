@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { Card, Icon, Spinner } from "@canonical/react-components";
 import { useDispatch, useSelector } from "react-redux";
-import { useHistory } from "react-router-dom";
+import { Redirect, useHistory } from "react-router-dom";
 import * as Yup from "yup";
 
 import ConnectivityCard from "./ConnectivityCard";
@@ -48,6 +48,7 @@ const MaasIntro = (): JSX.Element => {
   const configLoading = useSelector(configSelectors.loading);
   const configSaved = useSelector(configSelectors.saved);
   const configSaving = useSelector(configSelectors.saving);
+  const completedIntro = useSelector(configSelectors.completedIntro);
   const reposErrors = useSelector(repoSelectors.errors);
   const reposLoading = useSelector(repoSelectors.loading);
   const reposSaving = useSelector(repoSelectors.saving);
@@ -65,6 +66,21 @@ const MaasIntro = (): JSX.Element => {
   const loading = authLoading || configLoading || reposLoading;
   const saving = configSaving || reposSaving;
   const saved = configSaved;
+
+  if (completedIntro) {
+    if (!authUser?.completed_intro) {
+      return <Redirect to={introURLs.user} />;
+    }
+    return (
+      <Redirect
+        to={
+          authUser?.is_superuser
+            ? dashboardURLs.index
+            : machineURLs.machines.index
+        }
+      />
+    );
+  }
 
   return (
     <Section>
