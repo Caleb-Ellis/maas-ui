@@ -48,7 +48,7 @@ context("Header", () => {
 
   it("navigates to images", () => {
     cy.get(".p-navigation__link a:contains(Images)").click();
-    cy.location("pathname").should("eq", generateLegacyURL("/images"));
+    cy.location("pathname").should("eq", generateNewURL("/images"));
     cy.get(".p-navigation__link.is-selected a").contains("Images");
   });
 
