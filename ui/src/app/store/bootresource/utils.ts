@@ -1,4 +1,15 @@
-import type { BootResource } from "./types";
+import type {
+  BootResource,
+  BootResourceUbuntuArch,
+  NormalisedUbuntuRelease,
+} from "./types";
+
+export const archUnsupported = (
+  release: NormalisedUbuntuRelease,
+  archName: BootResourceUbuntuArch["name"]
+): boolean =>
+  "unsupported_arches" in release &&
+  release.unsupported_arches.includes(archName);
 
 export const splitResourceName = (
   name: BootResource["name"]

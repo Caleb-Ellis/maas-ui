@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Row } from "@canonical/react-components";
 import { useFormikContext } from "formik";
-import { useSelector } from "react-redux";
 
 import ArchSelect from "./ArchSelect";
 import ReleaseSelect from "./ReleaseSelect";
@@ -10,20 +9,15 @@ import ReleaseSelect from "./ReleaseSelect";
 import ImagesTable from "app/images/components/ImagesTable";
 import type { ImageValue } from "app/images/types";
 import type {
-  BaseImageFields,
   BootResource,
   BootResourceUbuntuArch,
-  BootResourceUbuntuRelease,
+  NormalisedUbuntuRelease,
 } from "app/store/bootresource/types";
-import configSelectors from "app/store/config/selectors";
+import { archUnsupported } from "app/store/bootresource/utils";
 
 type Props = {
   arches: BootResourceUbuntuArch[];
-  // The api returns a different release object depending on whether it was
-  // synced or fetched. Fetched releases don't include unsupported_arches so we
-  // need to handle both types.
-  // https://bugs.launchpad.net/maas/+bug/1934610
-  releases: (BootResourceUbuntuRelease | BaseImageFields)[];
+  releases: NormalisedUbuntuRelease[];
   resources: BootResource[];
 };
 
@@ -32,43 +26,84 @@ const UbuntuImageSelect = ({
   releases,
   resources,
 }: Props): JSX.Element => {
-  const commissioningReleaseName = useSelector(
-    configSelectors.commissioningDistroSeries
-  );
-  const [selectedRelease, setSelectedRelease] = useState<
-    BootResourceUbuntuRelease["name"]
-  >(commissioningReleaseName || "");
   const { setFieldValue, values } =
     useFormikContext<{ images: ImageValue[] }>();
   const { images } = values;
   const availableArches = arches.filter((arch) => !arch.deleted);
   const availableReleases = releases.filter((release) => !release.deleted);
-  const handleClear = (image: ImageValue) => {
-    const filteredImages = values.images.filter((i) => i !== image);
-    setFieldValue("images", filteredImages);
+  const initialArches = arches.filter((arch) =>
+    images.some((image) => image.arch === arch.name)
+  );
+  const initialReleases = releases.filter((release) =>
+    images.some((image) => image.release === release.name)
+  );
+  const [selectedArches, setSelectedArches] = useState(initialArches);
+  const [selectedReleases, setSelectedReleases] = useState(initialReleases);
+
+  const handleReleaseChange = (release: NormalisedUbuntuRelease) => {
+    let newReleases: NormalisedUbuntuRelease[] = [];
+    if (selectedReleases.some((selected) => selected.name === release.name)) {
+      newReleases = selectedReleases.filter(
+        (selected) => selected.name !== release.name
+      );
+    } else {
+      newReleases = [...selectedReleases, release];
+    }
+    // Remove arches that are not supported by all the newly selected releases.
+    const newArches = selectedArches.filter((arch) =>
+      newReleases.some((release) => !archUnsupported(release, arch.name))
+    );
+    setSelectedArches(newArches);
+    setSelectedReleases(newReleases);
   };
+
+  const handleArchChange = (arch: BootResourceUbuntuArch) => {
+    let newArches: BootResourceUbuntuArch[] = [];
+    if (selectedArches.some((selected) => selected.name === arch.name)) {
+      newArches = selectedArches.filter(
+        (selected) => selected.name !== arch.name
+      );
+    } else {
+      newArches = [...selectedArches, arch];
+    }
+    setSelectedArches(newArches);
+  };
+
+  useEffect(() => {
+    // Construct the images list based on changes to the selected arches/releases.
+    const newImages: ImageValue[] = [];
+    selectedReleases.forEach((release) => {
+      selectedArches.forEach((arch) => {
+        if (!archUnsupported(release, arch.name)) {
+          newImages.push({
+            arch: arch.name,
+            release: release.name,
+            os: "ubuntu",
+            title: release.title,
+          });
+        }
+      });
+    });
+    setFieldValue("images", newImages);
+  }, [selectedArches, selectedReleases, setFieldValue]);
 
   return (
     <>
       <Row className="p-divider">
         <ReleaseSelect
+          handleReleaseChange={handleReleaseChange}
           releases={availableReleases}
-          selectedRelease={selectedRelease}
-          setSelectedRelease={setSelectedRelease}
+          selectedReleases={selectedReleases}
         />
         <ArchSelect
           arches={availableArches}
-          release={
-            releases.find((release) => release.name === selectedRelease) || null
-          }
+          handleArchChange={handleArchChange}
+          selectedArches={selectedArches}
+          selectedReleases={selectedReleases}
         />
       </Row>
       <div className="u-sv2"></div>
-      <ImagesTable
-        handleClear={handleClear}
-        images={images}
-        resources={resources}
-      />
+      <ImagesTable images={images} releases={releases} resources={resources} />
     </>
   );
 };

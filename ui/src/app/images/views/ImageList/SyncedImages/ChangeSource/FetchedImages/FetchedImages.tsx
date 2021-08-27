@@ -6,6 +6,7 @@ import * as Yup from "yup";
 
 import FormikForm from "app/base/components/FormikForm";
 import UbuntuImageSelect from "app/images/components/UbuntuImageSelect";
+import { DEFAULT_ARCH } from "app/images/constants";
 import type { ImageValue } from "app/images/types";
 import { actions as bootResourceActions } from "app/store/bootresource";
 import bootResourceSelectors from "app/store/bootresource/selectors";
@@ -15,8 +16,6 @@ import type {
 } from "app/store/bootresource/types";
 import { BootResourceAction } from "app/store/bootresource/types";
 import configSelectors from "app/store/config/selectors";
-
-export const DEFAULT_ARCH = "amd64";
 
 const FetchedImagesSchema = Yup.object()
   .shape({

@@ -21,6 +21,7 @@ export type {
   BootResourceUbuntuCoreImage,
   BootResourceUbuntuRelease,
   BootResourceUbuntuSource,
+  NormalisedUbuntuRelease,
 } from "./base";
 export {
   BootResourceAction,

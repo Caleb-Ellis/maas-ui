@@ -2,20 +2,21 @@ import { useState } from "react";
 
 import { Icon, MainTable, Spinner } from "@canonical/react-components";
 import classNames from "classnames";
-import { useSelector } from "react-redux";
 
 import DeleteImageConfirm from "./DeleteImageConfirm";
 
 import DoubleRow from "app/base/components/DoubleRow";
 import TableActions from "app/base/components/TableActions";
 import type { ImageValue } from "app/images/types";
-import type { BootResource } from "app/store/bootresource/types";
+import type {
+  BootResource,
+  NormalisedUbuntuRelease,
+} from "app/store/bootresource/types";
 import { splitResourceName } from "app/store/bootresource/utils";
-import configSelectors from "app/store/config/selectors";
 
 type Props = {
-  handleClear?: (image: ImageValue) => void;
   images: ImageValue[];
+  releases?: NormalisedUbuntuRelease[];
   resources: BootResource[];
 };
 
@@ -38,14 +39,9 @@ const resourceMatchesImage = (
 /**
  * Generates a row based on a form image value.
  * @param image - the image value from which to generate the row.
- * @param onClear - function to clear the selected image from selection.
  * @returns row generated from form image value.
  */
-const generateImageRow = (
-  image: ImageValue,
-  onClear: (() => void) | null,
-  canBeCleared: boolean
-) => {
+const generateImageRow = (image: ImageValue) => {
   return {
     columns: [
       {
@@ -66,20 +62,7 @@ const generateImageRow = (
         className: "status-col",
       },
       {
-        content: onClear ? (
-          <TableActions
-            clearDisabled={!canBeCleared}
-            clearTooltip={
-              !canBeCleared
-                ? "At least one architecture must be selected for the default commissioning release."
-                : null
-            }
-            data-test="image-clear"
-            onClear={onClear}
-          />
-        ) : (
-          ""
-        ),
+        content: "",
         className: "actions-col u-align--right",
       },
     ],
@@ -93,7 +76,7 @@ const generateImageRow = (
 /**
  * Generates a row based on a resource.
  * @param resource - the resource from which to generate the row.
- * @param commissioningRelease - the name of the default commissioning release.
+ * @param releases - the list of releases relevant to the images table.
  * @param expanded - the resource id of the expanded row.
  * @param setExpanded - function to expand the row of a resource.
  * @param unchecked - whether the resource checkbox is unchecked.
@@ -101,13 +84,18 @@ const generateImageRow = (
  */
 const generateResourceRow = (
   resource: BootResource,
-  commissioningRelease: string | null,
+  releases: NormalisedUbuntuRelease[],
   expanded: BootResource["id"] | null,
   setExpanded: (id: BootResource["id"] | null) => void,
   unchecked = false
 ) => {
-  const { os, release } = splitResourceName(resource.name);
-  const canBeDeleted = !(os === "ubuntu" && release === commissioningRelease);
+  let canBeDeleted = false;
+  const release = releases.find(
+    (r) => r.name === splitResourceName(resource.name).release
+  );
+  if (release) {
+    canBeDeleted = release.deleted;
+  }
   const isExpanded = expanded === resource.id;
   let statusIcon = <Spinner />;
   let statusText = resource.status;
@@ -142,11 +130,6 @@ const generateResourceRow = (
           <TableActions
             data-test="image-actions"
             deleteDisabled={!canBeDeleted}
-            deleteTooltip={
-              !canBeDeleted
-                ? "Cannot delete images of the default commissioning release."
-                : null
-            }
             onDelete={() => setExpanded(resource.id)}
           />
         ),
@@ -171,16 +154,11 @@ const generateResourceRow = (
 };
 
 const ImagesTable = ({
-  handleClear,
   images,
+  releases = [],
   resources,
 }: Props): JSX.Element => {
-  const commissioningRelease = useSelector(
-    configSelectors.commissioningDistroSeries
-  );
   const [expanded, setExpanded] = useState<BootResource["id"] | null>(null);
-  const isCommissioningImage = (image: ImageValue) =>
-    image.os === "ubuntu" && image.release === commissioningRelease;
   // Resources set for deletion are those that exist in the database, but do not
   // exist in the form's images value, i.e. the checkbox was unchecked.
   const uncheckedResources = resources.filter((resource) =>
@@ -194,29 +172,18 @@ const ImagesTable = ({
       if (resource) {
         return generateResourceRow(
           resource,
-          commissioningRelease,
+          releases,
           expanded,
           setExpanded,
           false
         );
       } else {
-        const commissioningImages = images.filter(isCommissioningImage);
-        const canBeCleared = !(
-          isCommissioningImage(image) && commissioningImages.length === 1
-        );
-        const onClear = handleClear ? () => handleClear(image) : null;
-        return generateImageRow(image, onClear, canBeCleared);
+        return generateImageRow(image);
       }
     })
     .concat(
       uncheckedResources.map((resource) =>
-        generateResourceRow(
-          resource,
-          commissioningRelease,
-          expanded,
-          setExpanded,
-          true
-        )
+        generateResourceRow(resource, releases, expanded, setExpanded, true)
       )
     );
 

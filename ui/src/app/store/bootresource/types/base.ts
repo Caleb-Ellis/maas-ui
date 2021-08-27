@@ -34,6 +34,14 @@ export type BootResourceUbuntuRelease = BaseImageFields & {
   unsupported_arches: string[];
 };
 
+// The api returns a different release object depending on whether it was
+// synced or fetched. Fetched releases don't include unsupported_arches so we
+// need to be able to handle it being either type.
+// https://bugs.launchpad.net/maas/+bug/1934610
+export type NormalisedUbuntuRelease =
+  | BaseImageFields
+  | BootResourceUbuntuRelease;
+
 export type BootResourceUbuntuArch = BaseImageFields;
 
 export type BootResourceUbuntu = {

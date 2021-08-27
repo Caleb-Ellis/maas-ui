@@ -7,6 +7,7 @@ import * as Yup from "yup";
 
 import FormikForm from "app/base/components/FormikForm";
 import UbuntuImageSelect from "app/images/components/UbuntuImageSelect";
+import { DEFAULT_ARCH } from "app/images/constants";
 import type { ImageValue } from "app/images/types";
 import { actions as bootResourceActions } from "app/store/bootresource";
 import bootResourceSelectors from "app/store/bootresource/selectors";
@@ -19,6 +20,7 @@ import {
   BootResourceSourceType,
 } from "app/store/bootresource/types";
 import { splitResourceName } from "app/store/bootresource/utils";
+import configSelectors from "app/store/config/selectors";
 
 const UbuntuImagesSchema = Yup.object()
   .shape({
@@ -43,6 +45,9 @@ type Props = {
 
 const UbuntuImages = ({ sources }: Props): JSX.Element | null => {
   const dispatch = useDispatch();
+  const commissioningReleaseName = useSelector(
+    configSelectors.commissioningDistroSeries
+  );
   const ubuntu = useSelector(bootResourceSelectors.ubuntu);
   const resources = useSelector(bootResourceSelectors.ubuntuResources);
   const saving = useSelector(bootResourceSelectors.savingUbuntu);
@@ -57,28 +62,52 @@ const UbuntuImages = ({ sources }: Props): JSX.Element | null => {
   const cleanup = useCallback(() => bootResourceActions.cleanup(), []);
   const saved = previousSaving && !saving && !error;
 
-  if (!ubuntu) {
+  if (!ubuntu || !ubuntu.arches.length || !ubuntu.releases.length) {
     return null;
   }
 
-  const initialImages = resources.reduce<ImageValue[]>((images, resource) => {
-    // Resources come in the form "<os-name>/<release>" e.g. "ubuntu/bionic".
-    const { os, release } = splitResourceName(resource.name);
-    // We check that the release and arch of the resource are known by the
-    // source(s).
-    const releaseExists = ubuntu.releases.some(({ name }) => name === release);
-    const archExists = ubuntu.arches.some(({ name }) => name === resource.arch);
-    // If resource details are known, we add a new image value to the list.
-    if (releaseExists && archExists) {
-      images.push({
-        arch: resource.arch,
-        os,
-        release,
-        title: resource.title,
-      });
-    }
-    return images;
-  }, []);
+  const imagesFromResources = resources.reduce<ImageValue[]>(
+    (images, resource) => {
+      // Resources come in the form "<os-name>/<release>" e.g. "ubuntu/bionic".
+      const { os, release } = splitResourceName(resource.name);
+      // We check that the release and arch of the resource are known by the
+      // source(s).
+      const releaseExists = ubuntu.releases.some(
+        ({ name }) => name === release
+      );
+      const archExists = ubuntu.arches.some(
+        ({ name }) => name === resource.arch
+      );
+      // If resource details are known, we add a new image value to the list.
+      if (releaseExists && archExists) {
+        images.push({
+          arch: resource.arch,
+          os,
+          release,
+          title: resource.title,
+        });
+      }
+      return images;
+    },
+    []
+  );
+  const commissioningRelease = ubuntu.releases.find(
+    (release) => release.name === commissioningReleaseName
+  );
+  const defaultArch = ubuntu.arches.find((arch) => arch.name === DEFAULT_ARCH);
+  // If the resource list is empty (e.g. with a new MAAS), we construct a
+  // default selected image using the commissioning release and default arch.
+  const initialImages =
+    imagesFromResources.length > 0
+      ? imagesFromResources
+      : [
+          {
+            arch: defaultArch?.name || ubuntu.arches[0].name,
+            os: "ubuntu",
+            release: commissioningRelease?.name || ubuntu.releases[0].name,
+            title: commissioningRelease?.title || ubuntu.releases[0].title,
+          },
+        ];
   const imagesDownloading = resources.some((resource) => resource.downloading);
   const canStopImport = imagesDownloading && !stoppingImport;
   const mainSource = sources.length > 0 ? sources[0] : null;
@@ -102,9 +131,7 @@ const UbuntuImages = ({ sources }: Props): JSX.Element | null => {
           editable={!tooManySources}
           enableReinitialize
           errors={error}
-          initialValues={{
-            images: initialImages,
-          }}
+          initialValues={{ images: initialImages }}
           onSubmit={(values) => {
             dispatch(cleanup());
             const osystems = values.images.reduce<OsystemParam[]>(
