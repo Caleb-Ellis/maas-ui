@@ -3,10 +3,11 @@ import { useEffect } from "react";
 
 import { Button, Icon, Spinner } from "@canonical/react-components";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import Switch from "app/base/components/Switch";
 import { useSendAnalytics } from "app/base/hooks";
+import type { WithReturnURL } from "app/base/types";
 import { KVMHeaderViews } from "app/kvm/constants";
 import type { KVMSetHeaderContent } from "app/kvm/types";
 import kvmURLs from "app/kvm/urls";
@@ -37,6 +38,7 @@ const LXDHostToolbar = ({
   viewByNuma,
 }: Props): JSX.Element | null => {
   const dispatch = useDispatch();
+  const { pathname } = useLocation();
   const pod = useSelector((state: RootState) =>
     podSelectors.getById(state, hostId)
   );
@@ -70,11 +72,11 @@ const LXDHostToolbar = ({
         </h2>
         {inClusterView && !showBasic && (
           <div className="u-nudge-up--x-small">
-            <Link
+            <Link<WithReturnURL>
               data-test="settings-link"
               to={{
                 pathname: kvmURLs.lxd.cluster.host.edit({ clusterId, hostId }),
-                state: { from: window.location.pathname },
+                state: { returnURL: pathname },
               }}
             >
               <Icon name="settings" />

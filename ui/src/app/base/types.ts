@@ -49,3 +49,7 @@ export type APIError<E = null> =
 // passing data-test attributes to generic components):
 // https://github.com/microsoft/TypeScript/issues/28960
 export type DataTestElement<E> = E & { "data-test"?: string };
+
+export type WithReturnURL = {
+  returnURL: string;
+};

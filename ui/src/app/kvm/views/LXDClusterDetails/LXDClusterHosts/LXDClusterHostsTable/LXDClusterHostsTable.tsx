@@ -10,10 +10,11 @@ import {
   Strip,
 } from "@canonical/react-components";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import TableHeader from "app/base/components/TableHeader";
 import { useTableSort } from "app/base/hooks";
+import type { WithReturnURL } from "app/base/types";
 import { SortDirection } from "app/base/types";
 import CPUColumn from "app/kvm/components/CPUColumn";
 import NameColumn from "app/kvm/components/NameColumn";
@@ -68,7 +69,8 @@ const generateRows = (
   clusterId: VMCluster["id"],
   clusterHosts: Pod[],
   pools: ResourcePool[],
-  setHeaderContent: KVMSetHeaderContent
+  setHeaderContent: KVMSetHeaderContent,
+  pathname: string
 ) =>
   clusterHosts.map((host) => {
     const pool = pools.find((pool) => pool.id === host.pool);
@@ -143,15 +145,15 @@ const generateRows = (
                 <Icon name="plus" />
               </Button>
               <div className="u-nudge-right--small">
-                <Link
-                  className="p-button--neutral has-icon u-no-margin"
+                <Link<WithReturnURL>
+                  className="p-button--neutral no-background has-icon u-no-margin"
                   data-test="vm-host-settings"
                   to={{
                     pathname: kvmURLs.lxd.cluster.host.edit({
                       clusterId,
                       hostId: host.id,
                     }),
-                    state: { from: window.location.pathname },
+                    state: { returnURL: pathname },
                   }}
                 >
                   <Icon name="settings" />
@@ -169,6 +171,7 @@ const LXDClusterHostsTable = ({
   setHeaderContent,
 }: Props): JSX.Element => {
   const dispatch = useDispatch();
+  const { pathname } = useLocation();
   const clusterHosts = useSelector((state: RootState) =>
     podSelectors.lxdHostsInClusterById(state, clusterId)
   );
@@ -293,7 +296,8 @@ const LXDClusterHostsTable = ({
                   clusterId,
                   sortedClusterHosts,
                   pools,
-                  setHeaderContent
+                  setHeaderContent,
+                  pathname
                 )
               : []
           }
