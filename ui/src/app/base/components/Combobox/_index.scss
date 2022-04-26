@@ -1,0 +1,48 @@
+@mixin Combobox {
+  $input-height: 2 * $spv-nudge + map-get($line-heights, default-text);
+
+  .combobox {
+    position: relative;
+
+    .combobox__toggle {
+      @extend %vf-button-has-icon;
+      @include vf-animation(background-color, snap, in);
+
+      background-color: transparent;
+      border-color: transparent;
+      height: $input-height;
+      margin: 0;
+      position: absolute;
+      right: 0;
+      top: 0;
+    }
+
+    .combobox__menu {
+      @extend %vf-bg--x-light;
+      @extend %vf-has-box-shadow;
+      @extend %vf-has-round-corners;
+
+      list-style: none;
+      margin: 0;
+      max-height: 10rem;
+      overflow: auto;
+      padding: 0;
+      position: absolute;
+      top: $input-height;
+      width: 100%;
+      z-index: 10;
+    }
+
+    .combobox__item {
+      @include vf-animation(background-color, snap, in);
+
+      padding: $spv--x-small $sph--small;
+      width: 100%;
+
+      &:hover,
+      &.is-active {
+        background-color: $colors--light-theme--background-hover;
+      }
+    }
+  }
+}

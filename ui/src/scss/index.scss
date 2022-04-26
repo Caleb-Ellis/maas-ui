@@ -78,6 +78,7 @@
 @import "~app/base/components/CertificateDownload";
 @import "~app/base/components/CertificateMetadata";
 @import "~app/base/components/ColumnToggle";
+@import "~app/base/components/Combobox";
 @import "~app/base/components/DebounceSearchBox";
 @import "~app/base/components/DHCPTable";
 @import "~app/base/components/DoughnutChart";
@@ -103,6 +104,7 @@
 @include CertificateDownload;
 @include CertificateMetadata;
 @include ColumnToggle;
+@include Combobox;
 @include DebounceSearchBox;
 @include DHCPTable;
 @include DoughnutChart;

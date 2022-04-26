@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import type { CredentialsFormValues } from "../../types";
 
 import CertificateFields from "app/base/components/CertificateFields";
+import Combobox from "app/base/components/Combobox";
 import FormikField from "app/base/components/FormikField";
 import ResourcePoolSelect from "app/base/components/ResourcePoolSelect";
 import ZoneSelect from "app/base/components/ZoneSelect";
@@ -41,21 +42,17 @@ export const CredentialsFormFields = ({
         <FormikField label="Name" name="name" required type="text" />
         <ZoneSelect name="zone" required valueKey="id" />
         <ResourcePoolSelect name="pool" required valueKey="id" />
-        <FormikField
-          autoComplete="off"
+        <FormikField<typeof Combobox>
+          component={Combobox}
+          items={lxdAddresses}
           label="LXD address"
-          list="lxd-addresses"
           name="power_address"
+          placeholder="Input new or select an existing LXD address."
+          onInputValueChange={({ inputValue }) =>
+            setFieldValue("power_address", inputValue || "")
+          }
           required
-          type="text"
         />
-        <datalist id="lxd-addresses">
-          {lxdAddresses.map((address) => (
-            <option key={address} value={address}>
-              {address}
-            </option>
-          ))}
-        </datalist>
         <CertificateFields
           onShouldGenerateCert={(shouldGenerateCert) => {
             setShouldGenerateCert(shouldGenerateCert);
