@@ -15,37 +15,44 @@ import type {
 } from "downshift";
 import { useCombobox } from "downshift";
 
-export type Props = {
+export type Props<T = string> = {
   comboboxProps?: SubComponentProps<HTMLProps<HTMLDivElement>>;
-  filterFunction?: (
-    item: string,
-    changes: UseComboboxStateChange<string>
-  ) => boolean;
+  filterFunction?: (item: T, changes: UseComboboxStateChange<T>) => boolean;
   itemProps?: SubComponentProps<HTMLProps<HTMLLIElement>>;
-  items: UseComboboxProps<string>["items"];
+  items: UseComboboxProps<T>["items"];
   labelProps?: SubComponentProps<Omit<LabelProps, "children" | "required">>;
   menuProps?: SubComponentProps<HTMLProps<HTMLUListElement>>;
-  onInputValueChange: UseComboboxProps<string>["onInputValueChange"];
+  onInputValueChange: UseComboboxProps<T>["onInputValueChange"];
   renderFunction?: (
-    item: string,
-    useComboboxReturnValue?: UseComboboxReturnValue<string>
+    item: T,
+    useComboboxReturnValue?: UseComboboxReturnValue<T>
   ) => ReactNode;
   toggleProps?: SubComponentProps<HTMLProps<HTMLButtonElement>>;
-  useComboboxProps?: Omit<
-    UseComboboxProps<string>,
-    "items" | "onInputValueChange"
-  >;
+  useComboboxProps?: Omit<UseComboboxProps<T>, "items" | "onInputValueChange">;
   wrapperProps?: SubComponentProps<HTMLProps<HTMLDivElement>>;
 } & SubComponentProps<InputProps>;
 
-const defaultFilterFunction = (
-  item: string,
-  changes: UseComboboxStateChange<string>
-) => item.toLowerCase().includes((changes.inputValue || "").toLowerCase());
+const defaultFilterFunction = <T,>(
+  item: T,
+  { inputValue }: UseComboboxStateChange<T>
+) => {
+  if (typeof item === "string" && typeof inputValue === "string") {
+    return item.toLowerCase().includes(inputValue.toLowerCase());
+  }
+  return true;
+};
 
-const defaultRenderFunction = (item: string) => item;
+const defaultRenderFunction = <T,>(item: T) => {
+  if (typeof item === "string") {
+    return item;
+  }
+  if (typeof item === "object") {
+    return JSON.stringify(item);
+  }
+  return null;
+};
 
-export const Combobox = ({
+export const Combobox = <T,>({
   comboboxProps,
   filterFunction = defaultFilterFunction,
   itemProps,
@@ -66,7 +73,7 @@ export const Combobox = ({
   value,
   wrapperProps,
   ...inputProps
-}: Props): JSX.Element => {
+}: Props<T>): JSX.Element => {
   const [comboboxItems, setComboboxItems] = useState(items);
   const useComboboxReturnValue = useCombobox({
     items: comboboxItems,

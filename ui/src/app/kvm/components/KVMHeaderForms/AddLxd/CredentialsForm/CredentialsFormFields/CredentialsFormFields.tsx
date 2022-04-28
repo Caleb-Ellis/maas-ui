@@ -44,6 +44,9 @@ export const CredentialsFormFields = ({
         <ResourcePoolSelect name="pool" required valueKey="id" />
         <FormikField<typeof Combobox>
           component={Combobox}
+          // item type cannot be inferred (i.e. it has "unknown" type) because
+          // we can't pass a generic to "typeof Combobox"
+          filterFunction={(item) => !!item}
           items={lxdAddresses}
           label="LXD address"
           name="power_address"
